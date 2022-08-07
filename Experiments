@@ -1,0 +1,350 @@
+library(dplyr)
+library(tm)
+library(SnowballC)
+library(sentimentr)
+library(ordinal)
+library(slam)
+library(PerformanceAnalytics)
+library(data.table)
+library(ggplot2)
+library(ldatuning)
+library(topicmodels)
+
+#Importing data set
+
+df<- fread("/Users/usuario/PycharmProjects/Twitter/Master_file_politics.csv")
+raw_df<- fread("/Users/usuario/PycharmProjects/Twitter/Master_file_politics.csv") 
+colnames(df)[1] <- "tweet_number"
+df<- df[,c(-2,-3,-4)] #eliminate  columns for analysis: "created_at", "tweet_id", "text_raw"
+
+
+# Cleaning process
+
+#Eliminate languages:
+df<- df[!grepl("ko", df$lang),]
+df<- df[!grepl("fi", df$lang),]
+df<- df[!grepl("de", df$lang),]
+df<- df[!grepl("da", df$lang),]
+df<- df[!grepl("fr", df$lang),]
+df<- df[!grepl("ru", df$lang),]
+df<- df[!grepl("pt", df$lang),]
+df<- df[!grepl("It", df$lang),]
+df<- df[!grepl("ja", df$lang),]
+df<- df[!grepl("et", df$lang),]
+df<- df[!grepl("ar", df$lang),]
+df<- df[!grepl("in", df$lang),]
+df<- df[!grepl("de", df$lang),]
+df<- df[!grepl("tl", df$lang),]
+df<- df[!grepl("no", df$lang),]
+df<- df[!grepl("hi", df$lang),]
+df<- df[!grepl("ca", df$lang),]
+
+#eliminating locations
+df<- df[!grepl("Aalst, België", df$location),]
+df<- df[!grepl("Wevelgem, België", df$location),]
+df<- df[!grepl("Mechelen Belgium", df$location),]
+df<- df[!grepl("België", df$location),]
+df<- df[!grepl("belgium", df$location),]
+df<- df[!grepl("Belgium", df$location),]
+df<- df[!grepl("Belgique", df$location),]
+df<- df[!grepl("Overpelt Belgie", df$location),]
+df<- df[!grepl("BELGIUM", df$location),]
+df<- df[!grepl("Kessel, belgie", df$location),]
+df<- df[!grepl("Belgie", df$location),]
+df<- df[!grepl("民主主義フォーラム、", df$location),]
+df<- df[!grepl("United Kingdom", df$location),]
+df<- df[!grepl("Antwerp", df$location),]
+df<- df[!grepl("Antwerpen, België", df$location),]
+df<- df[!grepl("Antwerp, Belgium", df$location),]
+df<- df[!grepl("Antwerp, Belgium", df$location),]
+df<- df[!grepl("The beautiful city of Antwerp", df$location),]
+df<- df[!grepl("Vlaanderen", df$location),]
+df<- df[!grepl("Vertrijk, Belgium", df$location),]
+df<- df[!grepl("Sint-Truiden, België", df$location),]
+df<- df[!grepl("Western Flanders", df$location),]
+df<- df[!grepl("Vlaanderen,Flanders,la Flandre", df$location),]
+df<- df[!grepl("Vlaanderen, Europese Unie", df$location),]
+df<- df[!grepl("Vlaanderen, Europa", df$location),]
+df<- df[!grepl("Vlaanderen Flanders Фландрия", df$location),]
+df<- df[!grepl("Vlaanderen", df$location),]
+df <- subset(df, location!="Kempen" & location!= "Johannesburg" )
+df <- subset(df, location!="Gent")
+df<- df[!grepl("Deurne-Centrum, Deurne", df$location),]
+df<- df[!grepl("Kuurne +", df$location),]
+df<- df[!grepl("Cape Town", df$location),]
+df<- df[!grepl("Bloemfontein", df$location),]
+df<- df[!grepl("Pennsylvania, USA", df$location),]
+df<- df[!grepl("North Carolina, USA", df$location),]
+df<- df[!grepl("Atlanta-Athens, Georgia, USA", df$location),]
+df<- df[!grepl("Minnesota, USA", df$location),]
+df<- df[!grepl("USA", df$location),]
+df<- df[!grepl("United States", df$location),]
+df<- df[!grepl("Sarasota, Florida", df$location),]
+df<- df[!grepl("USA", df$location),]
+df<- df[!grepl("Fllorida / USA", df$location),]
+df<- df[!grepl("Zythos", df$location),]
+df<- df[!grepl("Sodom & Gomorra.", df$location),]
+df<- df[!grepl("Helsinki (FI) & Bruges (BE)", df$location),]
+df<- df[!grepl("Barcelona, Catalunya", df$location),]
+df<- df[!grepl("Bangalore", df$location),]
+df<- df[!grepl("Bamako, Mali", df$location),]
+df<- df[!grepl("Bath, England", df$location),]
+df<- df[!grepl("India", df$location),]
+df<- df[!grepl("New Delhi India", df$location),]
+df<- df[!grepl("Tamil Nadu, Indian Union", df$location),]
+df<- df[!grepl("The Republic Of India", df$location),]
+df<- df[!grepl("bihar, India", df$location),]
+df<- df[!grepl("Pune, India", df$location),]
+df<- df[!grepl("Bengaluru, India", df$location),]
+df<- df[!grepl("Jammu, Jammu & Kashmir, India", df$location),]
+
+
+#bots or users not related to Dutch politics
+df<- df[!grepl("Sam van Rooy 🖤💛", df$username),] #Belgium politician
+df<- df[!grepl("Dateontwit", df$username),] 
+df<- df[!grepl("Vander Donckt R", df$username),] 
+df<- df[!grepl("Vieolette Liberty 💜", df$username),]
+df<- df[!grepl("Masih Alinejad 🏳️", df$username),]
+df<- df[!grepl("Beeld", df$username),] # South Africa newspapper 
+df<- df[!grepl("Volksblad", df$username),]
+df<- df[!grepl("Pensioenspook", df$username),]
+df<- df[!grepl("Volksblad", df$username),]
+df<- df[!grepl("R. Genis", df$username),]
+
+
+#Lower case
+df$text_en <- tolower(df$text_en)
+
+#Removing links
+df$text_en <-gsub(" ?(f|ht)tp(s?)://(.*)[.][a-z]+", " ", df$text_en)
+
+
+#Removing links
+df$text_en <-gsub(" ?(f|ht)tp(s?)://(.*)[.][a-z]+", " ", df$text_en)
+
+#Removing emojis
+df$text_en <- gsub("\\d+\\w*\\d*", "", df$text_en)
+
+#Only for sentiment
+df$text_en<- gsub("[[:punct:]]"," ",df$text_en)
+
+
+#Necesarry transformations for topic classification
+df$text_en<- gsub("don't","do not",df$text_en)
+df$text_en<- gsub("can't","can not",df$text_en)
+df$text_en<- gsub("isn't","is not",df$text_en)
+df$text_en<- gsub("it's","it is",df$text_en)
+df$text_en<- gsub("wasn't","was not",df$text_en)
+df$text_en<- gsub("that's","that is",df$text_en)
+df$text_en<- gsub("didn't","did not",df$text_en)
+df$text_en<- gsub("doesn't","does not",df$text_en)
+df$text_en<- gsub("shouldn't","should not",df$text_en)
+df$text_en<- gsub("won't","would not",df$text_en)
+df$text_en<- gsub("hasn't","has not",df$text_en)
+df$text_en<- gsub("weren't","were not",df$text_en)
+df$text_en<- gsub("couldn't","could not",df$text_en)
+df$text_en<- gsub("aren't","are not",df$text_en)
+df$text_en<- gsub("haven't","have not",df$text_en)
+df$text_en<- gsub("I'm","I am",df$text_en)
+df$text_en<- gsub("we're","we are",df$text_en)
+df$text_en<- gsub("we'll","we will",df$text_en)
+df$text_en<- gsub("I've","I have",df$text_en)
+df$text_en<- gsub("I'll","I will",df$text_en)
+
+#remove # and translate
+df$text_en<- gsub("#"," ",df$text_en)
+df$text_en<- gsub("boereninopstand","farmers uprising",df$text_en)
+df$text_en<- gsub("boerenprotesten","farmes protest",df$text_en)
+df$text_en<- gsub("boerinverzet","farmers resistance",df$text_en)
+df$text_en<- gsub("ruttestapop","rutte step up",df$text_en)
+df$text_en<- gsub("dedam","the dam",df$text_en)
+df$text_en<- gsub("wappie","intoxicated",df$text_en)
+df$text_en<- gsub("wappies","intoxicated",df$text_en)
+df$text_en<- gsub("boeren","farmer",df$text_en)
+df$text_en<- gsub("ikwiger","",df$text_en)
+df$text_en<- gsub("damdemonstrations"," the demonstrations",df$text_en)
+df$text_en<- gsub("nederlandinverzet"," the netherlands in resistance",df$text_en)
+df$text_en<- gsub("farmerinverzet"," farmer in opposition",df$text_en)
+df$text_en<- gsub("farmerprotest"," farmer  protest",df$text_en)
+df$text_en<- gsub("nofarmernofood","  no farmer no food",df$text_en)
+df$text_en<- gsub("farmeropstand","farmer rebellion",df$text_en)
+df$text_en<- gsub("burgerprotest","citizen protest",df$text_en)
+df$text_en<- gsub("steundefarmer","support the farmer",df$text_en)
+df$text_en<- gsub("dutchfarmersprotest","dutch farmers protest",df$text_en)
+df$text_en<- gsub("boerburgerb","",df$text_en)
+df$text_en<- gsub("dutchfarmers"," dutch farmers",df$text_en)
+df$text_en<- gsub("weareprotestors","we are protestors",df$text_en)
+
+df$tweet_number <- 1:length(df$tweet_id)
+#Visualizing the distribution of characters per tweet
+df$nchar<- nchar(df$text_en)
+summary(df$nchar)
+hist(df$nchar)
+boxplot(nchar ~ tweet_number, data= df,main = "Characters per tweet", xlab= "Tweets", ylab= "Number of Characters")
+
+
+#Stem documents and remove stopwords topic classification
+df$text_en <- stemDocument(df$text_en)
+df$text_en<- removeWords(df$text_en , stopwords(kind="en"))
+
+#Remove white spaces
+df$text_en<- stripWhitespace(df$text_en)
+
+#eliminationg empty docs
+df <-df[-c(186:274),]
+df <-df[-307,]
+df <-df[-c(995:1051),]
+df <-df[-c(996:1024),]
+df <-df[-c(996:999),]
+df <-df[-c(4743:4833),]
+
+
+#Sentiment analysis using sentimentr
+void <- get_sentences(df$text_en)
+polarityscore = c()
+time = c()
+for (i in 1:length(void)) {
+  ptm <- proc.time()
+  polarityscore[i] <- sentiment(void[[i]])$sentiment
+  time[i] = (proc.time() - ptm)[3]
+  
+}
+df$sentiment <- polarityscore
+summary(df$sentiment)
+
+#Histogram of polarity score
+hist(df$sentiment, main = "Histogram of the polatiry score regarding Dutch politics", xlab = "Polarity Score")
+
+
+
+
+#Topic classification
+#Removing other stop words
+df$text_en<- gsub("The","",df$text_en)
+df$text_en<- gsub("can","",df$text_en)
+df$text_en<- gsub("Can","",df$text_en)
+df$text_en<- gsub("also","",df$text_en)
+df$text_en<- gsub("Also","",df$text_en)
+df$text_en<- gsub("Will","",df$text_en)
+df$text_en<- gsub("will","",df$text_en)
+df$text_en<- gsub("now","",df$text_en)
+df$text_en<- gsub("Now","",df$text_en)
+df$text_en<- gsub("becaus","",df$text_en)
+df$text_en<- gsub("Becaus","",df$text_en)
+df$text_en<- gsub("want","",df$text_en)
+df$text_en<- gsub("Want","",df$text_en)
+df$text_en<- gsub("onli","",df$text_en)
+df$text_en<- gsub("Onli","",df$text_en)
+df$text_en<- gsub("You","",df$text_en)
+df$text_en<- gsub("you","",df$text_en)
+df$text_en<- gsub("doe","",df$text_en)
+df$text_en<- gsub("Doe","",df$text_en)
+df$text_en<- gsub("and","",df$text_en)
+df$text_en<- gsub("And","",df$text_en)
+df$text_en<- gsub("Don","",df$text_en)
+df$text_en<- gsub("don","",df$text_en)
+df$text_en<- gsub("But","",df$text_en)
+df$text_en<- gsub("but","",df$text_en)
+df$text_en<- gsub("Say","",df$text_en)
+df$text_en<- gsub("say","",df$text_en)
+df$text_en<- gsub("That","",df$text_en)
+df$text_en<- gsub("that","",df$text_en)
+df$text_en<- gsub("This","",df$text_en)
+df$text_en<- gsub("this","",df$text_en)
+df$text_en<- gsub("What","",df$text_en)
+df$text_en<- gsub("what","",df$text_en)
+df$text_en<- gsub("someth","",df$text_en)
+df$text_en<- gsub("Someth","",df$text_en)
+df$text_en<- gsub("iek","",df$text_en)
+df$text_en<- gsub("Realli","",df$text_en)
+df$text_en<- gsub("realli","",df$text_en)
+df$text_en<- gsub("See","",df$text_en)
+df$text_en<- gsub("see","",df$text_en)
+df$text_en<- gsub("Still","",df$text_en)
+df$text_en<- gsub("still","",df$text_en)
+df$text_en<- gsub("Make","",df$text_en)
+df$text_en<- gsub("make","",df$text_en)
+df$text_en<- gsub("Veri","",df$text_en)
+df$text_en<- gsub("veri","",df$text_en)
+df$text_en<- gsub("Just","",df$text_en)
+df$text_en<- gsub("just","",df$text_en)
+df$text_en<- gsub("Think","",df$text_en)
+df$text_en<- gsub("think","",df$text_en)
+df$text_en<- gsub("@lientj","",df$text_en)
+df$text_en<- gsub("come","",df$text_en)
+
+#VectorSource
+documents <- Corpus(VectorSource(df$text_en))
+m_tweets <- DocumentTermMatrix(documents, control = list(weighting = weightTf))
+m_tweets <- removeSparseTerms(m_tweets,0.97)
+individualwords <- as.data.frame(as.matrix(m_tweets))
+
+sel = which(rowSums(individualwords)==0)
+m_tweets = m_tweets [-sel,]
+m_tweets
+
+#LDA tunning
+results <- FindTopicsNumber(
+  m_tweets,
+  topics = seq(from = 2, to = 32, by = 1),
+  metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
+  method = "Gibbs",
+  control = list(seed = 77),
+  mc.cores = 2L,
+  verbose = TRUE
+)
+results
+
+FindTopicsNumber_plot(results)
+
+lda_model_7 <- LDA(m_tweets,6)
+lda_model_7 <- LDA(m_tweets,7)
+lda_model_8 <- LDA(m_tweets,8)
+lda_model_9 <- LDA(m_tweets,9)
+lda_model_10 <- LDA(m_tweets,10)
+lda_model_11 <- LDA(m_tweets,11)
+lda_model_12 <- LDA(m_tweets,12)
+
+
+#Perplexity
+perplexity(lda_model_6)
+perplexity(lda_model_7)
+perplexity(lda_model_8)
+perplexity(lda_model_9)
+perplexity(lda_model_10)
+perplexity(lda_model_11)
+perplexity(lda_model_12)
+#Best perplexity is an LDA model of 7 terms
+
+terms(lda_model_7, 5)
+
+
+#Topics histogram
+res <- as.data.frame(topics(lda_model_7))
+res$id <- rownames(res) 
+res <- rename(res, topics = "topics(lda_model_7)") # must be present in both. 
+df$id <-rownames(df)
+res$id <-as.integer(res$id)
+
+
+df1<- merge(df,res, by.x = "tweet_number", by.y = "id", all.x = TRUE)
+df1$id <- 1:length(red$id)
+
+
+#to see frequency of topics
+print(head(df1))
+hist(df1$topics, main = "Histogram of topics", xlab = "Topics")
+
+#Correlation
+correlations2 = df1[,c("sentiment", "topics")] 
+chart.Correlation(correlations2, histogram=TRUE, pch=19, main = "Correlation between polarity score and topics")
+
+#Regression model
+Model1 <- lm(sentiment ~ topics + followers_count + nchar, data = df1)
+summary(Model1)
+
+#
+boxplot(sentiment ~ topics, data=df1, main="Polarity score per tweet topic",
+xlab="Topic", ylab="Polarity score")
+
+
