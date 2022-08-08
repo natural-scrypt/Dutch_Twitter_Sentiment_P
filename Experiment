@@ -1,4 +1,4 @@
-#This portion is all run in RStudio
+#This portion is designed to run in RStudio
 
 library(dplyr)
 library(tm)
