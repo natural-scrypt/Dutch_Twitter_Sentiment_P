@@ -1,3 +1,5 @@
+#This portion is all run in RStudio
+
 library(dplyr)
 library(tm)
 library(SnowballC)
