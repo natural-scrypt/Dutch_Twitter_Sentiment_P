@@ -1,4 +1,4 @@
-# This portion is designed to run in PyCharm
+# This portion is designed to run in Python
 # This file mines data from Twitter through its API, translate the tweets into english via googletrans and appends all the data in a csv file
 pip install googletrans==4.0.0-rc1
 from googletrans import Translator
@@ -74,3 +74,6 @@ except BaseException as e:
 now = datetime.datetime.now()
 print("Current date and time: ")
 print(str(now))
+
+
+#
