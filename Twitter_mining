@@ -1,3 +1,4 @@
+# This portion runs in Python
 # This file mines data from Twitter through its API, translate the tweets into english via googletrans and appends all the data in a csv file
 pip install googletrans==4.0.0-rc1
 from googletrans import Translator
