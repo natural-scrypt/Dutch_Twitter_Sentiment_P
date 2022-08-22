@@ -9,10 +9,10 @@ import traceback
 import tweepy
 import datetime
 
-api_key = "7DSTxJWpM5qY3VleQ1MZiQbYL"
-api_secret = "VmQTYkSPQGQ7ucp7SfqQ9VH0gktAtgGIyB0OmsQhoUMnh2N0Wp"
-access_token = "1518610427474812929-BRtWWVTGQtvdCMdgUSwXpQkNPatgwF"
-access_secret = "uUKUPOTDX3tjltx2IcFRLDThHTi64ce9eBfRIKG2rXZhP"
+api_key = "xxxxxxxx"
+api_secret = "xxxxxx"
+access_token = "xxxx-xxx"
+access_secret = "xxxx"
 
 auth = tweepy.OAuthHandler(api_key, api_secret)
 auth.set_access_token(access_token, access_secret)
@@ -76,4 +76,6 @@ print("Current date and time: ")
 print(str(now))
 
 
-#
+# Much of this script was assembled using multiple other scripts and joining them here.
+# Special thanks for  Yuliya-HV for helping me assemble this script
+#https://github.com/Yuliya-HV
